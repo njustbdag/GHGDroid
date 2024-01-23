@@ -7,54 +7,42 @@ from process import load_data
 import numpy as np
 import torch.nn as nn
 import torch.optim as optim
-from graphsage import GraphSage
+from model import GraphSage
 from sampling import multihop_sampling
 import time
-
 from collections import namedtuple
-INPUT_DIM = 411    # 输入维度
-# INPUT_DIM = 13337    # 输入维度
-# Note: 采样的邻居阶数需要与GCN的层数保持一致
-HIDDEN_DIM = [128, 2]   # 隐藏单元节点数
-NUM_NEIGHBORS_LIST = [5, 10]   # 每阶采样邻居的节点数
-assert len(HIDDEN_DIM) == len(NUM_NEIGHBORS_LIST)
-BTACH_SIZE = 1    # 批处理大小
-EPOCHS = 1000
-NUM_BATCH_PER_EPOCH = 20    # 每个epoch循环的批次数
-LEARNING_RATE = 0.01    # 学习率
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+from args import args,DEVICE
 
+from args import args
+
+print(args)
 Data = namedtuple('Data', ['x', 'y', 'adjacency_dict',
                            'train_mask', 'val_mask', 'test_mask'])
-
-# pkl = "dialog_dataset.pkl"
-pkl = '411_dataset_w2v_api.pkl'
-# pkl = '411_dataset_class_cos_api_mul_e1.pkl'
-data = load_data(False,pkl)
+data = load_data(False,args.pkl)
 x = data.x / data.x.sum(1, keepdims=True)  # 归一化数据，使得每一行和为1
 x = data.x
 print("x = ", x.shape)
-print("x type = ", type(x))
-print(x[[0,1]])
 
 train_index = np.where(data.train_mask)[0]
 train_label = data.y
 test_index = np.where(data.test_mask)[0]
-model = GraphSage(input_dim=INPUT_DIM, hidden_dim=HIDDEN_DIM,
-                  num_neighbors_list=NUM_NEIGHBORS_LIST).to(DEVICE)
+model = GraphSage(input_dim=args.input_dim, hidden_dim=args.hidden_dim,
+                  num_neighbors_list=args.num_neighbors_list).to(DEVICE)
 print("model = ",model)
 criterion = nn.CrossEntropyLoss().to(DEVICE)
-optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=5e-4)
+optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, weight_decay=5e-4)
 
-logger = utils.Logging('{}_{}.log'.format(pkl.split('.')[0],time.strftime("%Y%m%d%H%M%S", time.localtime())))
+logger = utils.Logging(args.log_file)
+
+
 def train():
     model.train()
-    for e in range(EPOCHS):
-        for batch in range(NUM_BATCH_PER_EPOCH):
-            batch_src_index = np.random.choice(train_index, size=(BTACH_SIZE,))
+    for e in range(args.epochs):
+        for batch in range(args.num_batch_per_epoch):
+            batch_src_index = np.random.choice(train_index, size=(args.batch_size,))
             batch_src_label = torch.from_numpy(train_label[batch_src_index]).long().to(DEVICE)
             # print("batch_src_index = " , batch_src_index)
-            batch_sampling_result = multihop_sampling(batch_src_index, NUM_NEIGHBORS_LIST, data.adjacency_dict)
+            batch_sampling_result = multihop_sampling(batch_src_index, args.num_neighbors_list, data.adjacency_dict)
 
             # print("batch_sampling_result = ", batch_sampling_result)
 
@@ -85,7 +73,7 @@ def train():
 def test(e):
     model.eval()
     with torch.no_grad():
-        test_sampling_result = multihop_sampling(test_index, NUM_NEIGHBORS_LIST, data.adjacency_dict)
+        test_sampling_result = multihop_sampling(test_index, args.num_neighbors_list, data.adjacency_dict)
         test_x = [torch.from_numpy(x[idx]).float().to(DEVICE) for idx in test_sampling_result]
         # print(test_x[0].shape,test_x[1].shape,test_x[2].shape)
         test_logits = model(test_x)
@@ -108,7 +96,7 @@ def test(e):
         utils.set_description(logger,desc)
 def val():
     model = torch.load('test.pt')
-    test_sampling_result = multihop_sampling(test_index, NUM_NEIGHBORS_LIST, data.adjacency_dict)
+    test_sampling_result = multihop_sampling(test_index, args.num_neighbors_list, data.adjacency_dict)
     test_x = [torch.from_numpy(x[idx]).float().to(DEVICE) for idx in test_sampling_result]
     test_logits = model(test_x)
     test_label = torch.from_numpy(data.y[test_index]).long().to(DEVICE)
@@ -125,11 +113,13 @@ def val():
     return f1
 
 if __name__ == '__main__':
-    logger.info("----------运行的数据为{}---------".format(pkl))
+    print("start")
+
+    logger.info("----------运行的数据为{}---------".format(args.pkl))
     train()
-    # start = time.time()
-    # val()
-    # end = time.time()
-    # print(end - start)
+    start = time.time()
+    val()
+    end = time.time()
+    print(end - start)
 
 

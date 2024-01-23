@@ -6,7 +6,7 @@ GHGDroid : Global Heterogeneous Graph-based Android Malware Detection
 2. build_graph.py : generate GHG in json format
 3. extract.py : extract api invocation from smali folders
 4. get_api_data : count and match sapi, generate api corpus for skip-gram model and calculate sensitive coefficient
-5. graphsage.py : the structure of iterative aggregated gcn stacked network model
+5. model.py : the structure of iterative aggregated gcn stacked network model
 6. process.py : preprocess the data before it was fed into model
 7. sampling.py : neighbor sampling on the GHG
 8. utils : tools help the experiment
