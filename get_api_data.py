@@ -21,7 +21,7 @@ def get_label_data():
     malware_dir = r"G:\sln\malware"
     benign_dir = r"G:\sln\benign"
     malware_list = os.listdir(malware_dir)
-    benign_list = os.l)
+    benign_list = os.listdir(benign_dir)
     print(benign_list)
     result = []
     for malware in malware_list:

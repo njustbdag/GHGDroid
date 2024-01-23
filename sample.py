@@ -1,16 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
--------------------------------------------------
-   File Name：     sampling
-   Description :
-   Author :       Lr
-   date：          2023/1/11
--------------------------------------------------
-   Change Activity:
-                   2023/1/11:
--------------------------------------------------
-"""
-
 import numpy as np
 
 
@@ -34,16 +21,15 @@ def sampling(src_nodes, sample_num, neighbor_table):
 
         sid = str(sid)
         if len(neighbor_table[sid]) >= sample_num:
-            res = np.random.choice(neighbor_table[sid], size=(sample_num,),replace=False)
+            res = np.random.choice(neighbor_table[sid], size=(sample_num,), replace=False)
         else:
-            res = np.random.choice(neighbor_table[sid], size=(sample_num,),replace=True)
+            res = np.random.choice(neighbor_table[sid], size=(sample_num,), replace=True)
         results.append(res)
     return np.asarray(results).flatten()
 
 
 def multihop_sampling(src_nodes, sample_nums, neighbor_table):
     """根据源节点进行多阶采样
-
     Arguments:
         src_nodes {list, np.ndarray} -- 源节点id
         sample_nums {list of int} -- 每一阶需要采样的个数
